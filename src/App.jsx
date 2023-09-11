@@ -1,12 +1,60 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import muiLogo from "/mui.svg";
 import { Button, Typography, Box, Link, Grid, Tooltip } from "@mui/joy";
 import { Add } from "@mui/icons-material";
+import { Container, Stage } from "@pixi/react";
+
+import Circle from "./components/Circle";
+import Rectangle from "./components/Rectangle";
 
 function App() {
-  const [count, setCount] = useState(0);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [enemies, setEnemies] = useState([]);
+  const [points, setPoints] = useState(0);
+
+  useEffect(() => {
+    //Spawn enemies
+    const interval = setInterval(() => {
+      setEnemies((enemies) => [
+        ...enemies,
+        {
+          x: Math.random() * 800,
+          y: Math.random() * 600,
+          radius: 50,
+          color: 0xff0000,
+        },
+      ]);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleMouseMove = (e) => {
+    console.log({
+      e,
+      x: e.nativeEvent.offsetX,
+      y: e.nativeEvent.offsetY,
+    });
+    setMousePosition({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
+  };
+
+  const handleShot = () => {
+    //check collision
+    for (let i = 0; i < enemies.length; i++) {
+      const enemy = enemies[i];
+      const dx = mousePosition.x - enemy.x;
+      const dy = mousePosition.y - enemy.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance < enemy.radius) {
+        //collision detected
+        console.log("collision detected");
+        setEnemies((enemies) => enemies.filter((e) => e !== enemy));
+        setPoints((_points) => _points + 1);
+      }
+    }
+  };
 
   return (
     <Box
@@ -22,85 +70,40 @@ function App() {
       }}
     >
       <Typography level="h1" color="primary">
-        Vite + React + MUI/Joy
+        Vite + MUI/Joy + React/Pixi
       </Typography>
-      <Box
-        sx={{
-          width: "60vw",
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-around",
-          alignItems: "space-around",
-          py: 10,
+      <Typography level="h2" color="primary">
+        Points: {points}
+      </Typography>
+      <Stage
+        style={{
+          cursor: "none",
         }}
+        width={800}
+        height={600}
+        onPointerMove={handleMouseMove}
+        onPointerDown={handleShot}
       >
-        <Link href="https://vitejs.dev" target="_blank">
-          <Tooltip title="Vite">
-            <Box
-              sx={{
-                width: 100,
-                height: 100,
-              }}
-              component="img"
-              src={viteLogo}
-              className="logo"
-              alt="Vite logo"
+        <Container width={800} height={600}>
+          {enemies.map((enemy, index) => (
+            <Circle
+              key={index}
+              x={enemy.x}
+              y={enemy.y}
+              radius={enemy.radius}
+              color={enemy.color}
             />
-          </Tooltip>
-        </Link>
-        <Link href="https://react.dev" target="_blank">
-          <Tooltip title="React">
-            <Box
-              sx={{
-                width: 100,
-                height: 100,
-              }}
-              component="img"
-              src={reactLogo}
-            />
-          </Tooltip>
-        </Link>
-        <Link href="https://mui.com/joy-ui/getting-started/" target="_blank">
-          <Tooltip title="MUI">
-            <Box
-              sx={{
-                width: 100,
-                height: 100,
-              }}
-              component="img"
-              src={muiLogo}
-              className="logo"
-              alt="Mui logo"
-            />
-          </Tooltip>
-        </Link>
-      </Box>
+          ))}
 
-      <Box
-        sx={{
-          mt: 2,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Button
-        size="lg"
-          startDecorator={<Add />}
-          onClick={() => setCount((count) => count + 1)}
-        >
-          count is {count}
-        </Button>
-        <Typography sx={{
-          mt: 2
-        }} color="neutral" level="h3">
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </Typography>
-      </Box>
-      <Typography color="primary" component="h4">
-        Click on any of the logos to learn more about them
-      </Typography>
+          <Rectangle
+            x={mousePosition.x - 5}
+            y={mousePosition.y - 5}
+            width={10}
+            height={10}
+            color={0x00ff00}
+          />
+        </Container>
+      </Stage>
     </Box>
   );
 }
